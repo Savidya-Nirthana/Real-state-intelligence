@@ -57,3 +57,51 @@ retrieval:
   similarity_threshold: 0.7
 
 
+# ============================================================================
+# CAG (Cache-Augmented Generation) - Semantic Cache
+# ============================================================================
+cag:
+  cache_ttl: 86400  # 24 hours in seconds (legacy, use history_ttl_hours)
+  max_cache_size: 1000
+  similarity_threshold: 0.90  # 0.90-0.95 recommended for paraphrase matching
+  history_ttl_hours: 24  # Dynamic history expires after 24 hours
+
+# ============================================================================
+# CRAG (Corrective RAG)
+# ============================================================================
+crag:
+  confidence_threshold: 0.6
+  expanded_k: 8
+
+# ============================================================================
+# Crawling Configuration
+# ============================================================================
+crawling:
+  max_depth: 3
+  delay_seconds: 2.0
+  max_pages: 100
+
+
+
+# ===============================================
+# Paths
+# ===============================================
+
+paths:
+  data_dir: data
+  vector_dir: data/vector_store
+  markdown_dir: data/primeland_markdown
+  cache_dir: data/cag_cache
+  logs_dir: logs
+
+# ============================================================================
+# Logging
+# ============================================================================
+logging:
+  enabled: true
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_tokens: true
+  log_latency: true
+
+
+base_url: "https://www.primelands.lk"
