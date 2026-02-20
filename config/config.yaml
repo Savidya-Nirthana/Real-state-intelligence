@@ -1,0 +1,59 @@
+# Configurations for context engineering RAG system
+# Edit this file to change the configuration
+
+
+# ===============================================
+# Provider Settings
+# ===============================================
+
+
+provider:
+  default: openrouter
+  tier : general
+
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    
+
+llm: 
+  temperature: 0.0
+  max_tokens: 2000
+  streaming: false
+
+embdedding:
+  tier: default
+  batch_size: 100
+  show_progress: false
+
+chunking:
+  fixed:
+    chunk_size: 800
+    chunk_overlap: 100
+
+  semantic:
+    max_chunk_size: 1000
+    min_chunk_size: 200
+
+  sliding:
+    window_size: 512
+    strid_size: 256
+  
+  parent_child:
+    parent_size: 1200
+    child_size: 250
+    child_overlap: 50
+
+  late:
+    base_size: 1000
+    split_size: 300
+    context_window: 150
+
+# ===============================================
+# Retieval Configuration
+# ===============================================
+
+retrieval:
+  top_k: 4
+  similarity_threshold: 0.7
+
+
