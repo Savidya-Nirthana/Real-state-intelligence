@@ -70,6 +70,14 @@ CHAT_MODEL = get_chat_model()
 EMBEDDING_MODEL = get_embedding_model()
 
 
+EMBEDDING_DIM = 1536
+
+if "large" in EMBEDDING_MODEL.lower():
+    EMBEDDING_DIM = 3072
+elif "small" in EMBEDDING_MODEL.lower() or "ada" in EMBEDDING_MODEL.lower():
+    EMBEDDING_DIM = 1536
+
+
 
 LLM_TEMPERATURE = _get_nested(_CONFIG, "llm", "temperature", default = 0.0)
 LLM_MAX_TOKENS = _get_nested(_CONFIG, "llm", "max_tokens", default = 2000)
@@ -135,6 +143,10 @@ CRAWL_MAX_DEPTH = _get_nested(_CONFIG, "crawling", "max_depth", default=3)
 CRAWL_DELAY_SECONDS = _get_nested(_CONFIG, "crawling", "delay_seconds", default=2.0)
 CRAWL_MAX_PAGES = _get_nested(_CONFIG, "crawling", "max_pages", default=100)
 
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
+QDRANT_URL = os.getenv("QDRANT_URL", None)
+QDRANT_COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", 'prime_lands')
+QDRANT_TIMEOUT=30
 
 
 def get_api_key(provider: str = None) -> str:

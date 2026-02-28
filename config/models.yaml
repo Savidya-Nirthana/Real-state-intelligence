@@ -5,8 +5,8 @@ openrouter:
     reason: google/gemini-2.5-pro
 
   embedding:
-    default: google/gemini-embedding-001
-    small: google/gemini-embedding-001
+    default: openai/text-embedding-3-large  # 3072 dimensions
+    small: openai/text-embedding-3-small    # 1536 dimensions
 
 openai:
   chat:
