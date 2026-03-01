@@ -53,6 +53,7 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         content = doc['content']
         url = doc['url']
         title = doc['title']
+        project_id = doc['project_id']
 
         try:
             sections = splitter.split_text(content)
@@ -81,6 +82,7 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                             "url": url,
                             "title" : title,
                             "text" : sub_text.strip(),
+                            "project_id" : project_id,
                             "strategy" : "semantic",
                             "chunk_index" : chunk_idx,
                             "heading" : section.metadata.get("h1", "") or section.metadata.get("h2", "")
@@ -94,6 +96,7 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         "url" : url, 
                         "title": title,
                         "text" : text,
+                        "project_id" : project_id,
                         "strategy" : "semantic",
                         "chunk_index" : chunk_idx,
                         "heading" : section.metadata.get("h1", "") or section.metadata.get("h2", "")
@@ -106,6 +109,7 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "url" : url,
                     "title" : title,
                     "text" : content.strip(),
+                    "project_id" : project_id,
                     "strategy" : "semantic",
                     "chunk_index" : chunk_idx,
                     "heading" : ""
@@ -133,7 +137,7 @@ def fixed_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         content = doc['content']
         url = doc['url']
         title = doc['title']
-
+        project_id = doc['project_id']
 
         doc_chunks = splitter.split_text(content)
 
@@ -144,6 +148,7 @@ def fixed_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "url" : url,
                     "title" : title,
                     "text": text.strip(),
+                    "project_id" : project_id,
                     "strategy" : "fixed",
                     "chunk_index" : chunk_idx,
                     "token_count" : token_count,
@@ -166,6 +171,7 @@ def sliding_chunks(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         content = doc['content']
         url = doc['url']
         title = doc['title']
+        project_id = doc['project_id']
 
         pos = 0
         window_idx = 0
@@ -181,6 +187,7 @@ def sliding_chunks(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "url" : url,
                     "title" : title,
                     "text" : window_text.strip(),
+                    "project_id" : project_id,
                     "strategy" : "sliding",
                     "chunk_index": chunk_idx,
                     "window_index" : window_idx,
@@ -222,6 +229,7 @@ def parent_child_chunk(document: List[Dict[str, Any]]) -> Tuple[List[Dict[str, A
         content = doc['content']
         url = doc['url']
         title = doc['title']
+        project_id = doc['project_id']
 
         parent_texts = parent_splitter.split_text(content)
 
@@ -236,6 +244,7 @@ def parent_child_chunk(document: List[Dict[str, Any]]) -> Tuple[List[Dict[str, A
                 "url" : url,
                 "title" : title,
                 "text" : parent_text.strip(),
+                "project_id" : project_id,
                 "strategy" : "parent",
                 "chunk_index": parent_idx,
                 "token_count": count_tokens(parent_text)
@@ -251,6 +260,7 @@ def parent_child_chunk(document: List[Dict[str, Any]]) -> Tuple[List[Dict[str, A
                         "url" : url,
                         "title" : title,
                         "text" : child_text.strip(),
+                        "project_id" : project_id,
                         "strategy": "child",
                         "chunk_index" : child_idx,
                         "token_count" : count_tokens(child_text)
@@ -278,6 +288,7 @@ def late_chunk_index(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         content = doc['content']
         url = doc['url']
         title = doc['title']
+        project_id = doc['project_id']
 
         passages = splitter.split_text(content)
 
@@ -287,6 +298,7 @@ def late_chunk_index(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     "url" : url,
                     "title" : title,
                     "text" : passage.strip(),
+                    "project_id" : project_id,
                     "strategy" : "late_chunk_base",
                     "chunk_index" : chunk_idx,
                     "token_count" : count_tokens(passage),

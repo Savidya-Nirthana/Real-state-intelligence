@@ -16,13 +16,13 @@ from real_state.config import (
 from typing import Dict, Any, List, Optional
 
 class QdrantStorage:
-    def __init__(self, url: str = None, api: str = None ,collection: str = 'crawl_data', timeout=30 ,dim=1536):
+    def __init__(self, url: str = None, api: str = None, embedding = get_default_embeddings() ,collection: str = 'prime_lands', timeout=30 ,dim=3072):
         self.embedding_dim = dim or EMBEDDING_DIM
         self.collection = collection or QDRANT_COLLECTION_NAME
         self.url = url or QDRANT_URL
         self.api = api or QDRANT_API_KEY
         self.timeout = timeout or QDRANT_TIMEOUT
-        self.embedding = get_default_embedding()
+        self.embedding = embedding or get_default_embeddings()
 
         self._qdrant_client = QdrantClient(
             url = self.url,
@@ -60,23 +60,102 @@ class QdrantStorage:
             "status" : info.status.name 
         }
 
-    def upsert(self, 
+    def upsert_chunks(self, 
         chunks: List[Dict[str, Any]],
-        embeddings: List[List[float]],
-        collection_name: str = QDRANT_COLLECTION_NAME,
+        collection_name: str = None,
         batch_size: int = 100
     ) -> int:
-        pass
+        """
+        Upsert points into the collection
+
+        each chunk dict is expected to contain at least:
+             - text (str) : The chunk content.
+             - url (str) : Souce url
+             - title (str) : Source document title
+             - project_id (str) : Source document project id
+             - strategy (str) : Chunking strategy
+             - chunk_index (int) : position in the original document
 
 
-    def search(self, 
-        query_vector: List[float],
+        payload : {
+            url : str,
+            title : str,
+            project_id : str,
+            strategy : str,
+            chunk_index : int,
+        }
+
+
+        """
+        collection_name = collection_name or QDRANT_COLLECTION_NAME
+        for i in range(0, len(chunks), batch_size):
+            batch_chunks = chunks[i:i+batch_size]
+
+
+            batch_embeddings = self.embedding.embed_documents([chunk["text"] for chunk in batch_chunks])
+
+
+            if len(batch_embeddings) != len(batch_chunks):
+                raise ValueError("Number of embeddings must match number of chunks")
+
+            points = []
+            for chunk, embedding in zip(batch_chunks, batch_embeddings):
+                point_id = str(uuid.uuid4())
+                payload = {
+                    "text": chunk["text"],
+                    "url": chunk["url"],
+                    "title": chunk["title"],
+                    "project_id": chunk["project_id"],
+                    "strategy": chunk["strategy"],
+                    "chunk_index": chunk["chunk_index"],
+                }
+                points.append(PointStruct(id=point_id, vector=embedding, payload=payload))
+
+            self._qdrant_client.upsert(
+                collection_name=collection_name,
+                points=points,
+            )
+
+        return len(chunks)
+
+
+    def search_chunks(self, 
+        query: str = None,
         top_k: int = 4,
         score_threshold: float = 0.0,
-        collecion_name: str = QDRANT_COLLECTION_NAME,
+        collection_name: str = None,
         strategy_filter: Optional[str] = None
     ):
-        pass
+        collection_name = collection_name or QDRANT_COLLECTION_NAME
+        query_filter = None
+        if strategy_filter:
+            query_filter = models.Filter(
+                must=[models.FieldCondition(key="strategy", match=models.MatchValue(value=strategy_filter))]
+            )
+        
+        query_vector = self.embedding.embed_query(query)
+        
+        search_result = self._qdrant_client.query_points(
+            collection_name=collection_name,
+            query=query_vector,
+            limit=top_k,
+            score_threshold=score_threshold
+        )
+
+        results = []
+        for hit in search_result.points:
+            payload = hit.payload or {}
+            result = {
+                "text": payload.get("text"),
+                "url": payload.get("url"),
+                "title": payload.get("title"),
+                "project_id": payload.get("project_id"),
+                "strategy": payload.get("strategy"),
+                "chunk_index": payload.get("chunk_index"),
+                "score": hit.score
+            }
+            results.append(result)
+        return results
     
 
 

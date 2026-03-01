@@ -43,7 +43,7 @@ def get_default_embeddings(
             model=use_model,
             openai_api_key=api_key,
             openai_api_base=OPENROUTER_BASE_URL,
-            show_progress=use_show_progress,
+            show_progress_bar=use_show_progress,
             **kwargs
         )
     else:

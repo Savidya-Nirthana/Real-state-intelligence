@@ -76,7 +76,7 @@ class PrimeLandWebCrawler:
 
             # 1. collect project id 
             project_id = soup.find("input", id="iProjectID")["value"]
-
+            ad_container.append(f"Project ID: {project_id}")
             
             # 2. Grab Title & Location
             title_elem = soup.find('h1', class_='project_name')
@@ -146,6 +146,7 @@ class PrimeLandWebCrawler:
 
         data =  {
             "title": page_title.strip() if url not in start_urls else "",
+            "project_id": project_id if url not in start_urls else "",
             "headings": headings if url not in start_urls else [],
             "content": content_md if url not in start_urls else "",
             "links": list(set(links)),
