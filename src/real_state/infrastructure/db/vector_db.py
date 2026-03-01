@@ -10,7 +10,8 @@ from real_state.config import (
     QDRANT_COLLECTION_NAME,
     QDRANT_TIMEOUT,
     QDRANT_URL,
-    EMBEDDING_DIM
+    EMBEDDING_DIM,
+    CRAWL_OUT_DIR
 )
 
 from typing import Dict, Any, List, Optional
@@ -118,6 +119,40 @@ class QdrantStorage:
 
         return len(chunks)
 
+    def _extract_parent_chunks(self, child_chunk:Dict[str, Any]) -> List[Dict[str,Any]]:
+        """
+        Extract parent chunk from child chunk
+        """
+        parent_id = child_chunk.get("parent_id")
+        if not parent_id:
+            return None
+        
+        parent_path = CRAWL_OUT_DIR / "parent_chunk.jsonl"
+        parent_chunks = []
+        with open(parent_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    parent_chunks.append(json.loads(line))
+
+        parent_chunk = [chunk for chunk in parent_chunks if chunk.get("parent_id") == parent_id]
+        return parent_chunk
+
+    def _ensure_payload_index(self, collection_name: str = None, field: str = "strategy"):
+        """
+        Ensure payload index exists for strategy field
+        """
+        collection_name = collection_name or QDRANT_COLLECTION_NAME
+        try:
+            self._qdrant_client.create_payload_index(
+                collection_name=collection_name,
+                field_name=field,
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+        except Exception:
+            pass
+        
+        
+
 
     def search_chunks(self, 
         query: str = None,
@@ -128,22 +163,39 @@ class QdrantStorage:
     ):
         collection_name = collection_name or QDRANT_COLLECTION_NAME
         query_filter = None
+
         if strategy_filter:
+            strategy_filter = strategy_filter.strip()
+            
+            self._ensure_payload_index(collection_name, "strategy")
+
             query_filter = models.Filter(
-                must=[models.FieldCondition(key="strategy", match=models.MatchValue(value=strategy_filter))]
+                must=[
+                    models.FieldCondition(
+                        key="strategy",
+                        match=models.MatchValue(value=strategy_filter)
+                    )
+                ]
             )
-        
+  
         query_vector = self.embedding.embed_query(query)
         
         search_result = self._qdrant_client.query_points(
             collection_name=collection_name,
             query=query_vector,
+            query_filter=query_filter,
             limit=top_k,
             score_threshold=score_threshold
         )
 
         results = []
         for hit in search_result.points:
+            if hit.payload.get("strategy") == "child":
+                parent_chunk = self._extract_parent_chunks(hit.payload)
+                if parent_chunk:
+                    hit.payload["text"] = parent_chunk[0]["text"]
+                    hit.payload["strategy"] = parent_chunk[0]["strategy"]
+                    hit.payload["chunk_index"] = parent_chunk[0]["chunk_index"]
             payload = hit.payload or {}
             result = {
                 "text": payload.get("text"),
