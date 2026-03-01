@@ -4,35 +4,19 @@ A production-ready **Retrieval-Augmented Generation (RAG)** system built on top 
 
 ---
 
-### 📋 Table of Contents
-
-- [Project Overview](#project-overview)
-<!-- - [Architecture](#architecture) -->
-- [Project Structure](#project-structure)
-- [Setup & Installation](#setup--installation)
-- [How to Run](#how-to-run)
-- [Part 1 — Web Crawler](#part-1--web-crawler)
-- [Part 2 — Chunking Lab](#part-2--chunking-lab)
-- [Part 3 — Intelligence Layers](#part-3--intelligence-layers)
-- [Part 4 — Performance Arena](#part-4--performance-arena)
-- [Engineering Report](#engineering-report)
-- [Results & Key Findings](#results--key-findings)
-- [Tech Stack](#tech-stack)
-
----
-
 ## 🎯 Project Overview
 
 This project builds a full end-to-end real estate Q&A system using modern RAG techniques. Starting from raw web crawling, it processes property data through five different chunking strategies, indexes them into a Qdrant vector database, and serves queries through three intelligent retrieval layers: standard RAG, Cache-Augmented Generation (CAG), and Corrective RAG (CRAG).
 
 **Key Goals:**
+
 - Crawl and structure property listings from primelands.lk
 - Benchmark 5 chunking strategies for retrieval quality
 - Implement CAG for sub-500ms FAQ responses
 - Implement CRAG with confidence-based corrective retrieval
 - Evaluate performance with rigorous quantitative metrics
----
 
+---
 
 ## 📁 Project Structure
 
@@ -83,6 +67,7 @@ real_state/
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
+
 - Python 3.10+
 - Node.js (for Playwright)
 - Openrouter(Recommended) or openai API key
@@ -114,6 +99,7 @@ cp .env-example .env
 ```
 
 Edit `.env`:
+
 ```env
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
 # or
@@ -125,9 +111,10 @@ QDRANT_COLLECTION_NAME='prime_lands'
 ```
 
 All configuration are saved in `config.yaml` and `config.yaml` is loaded at the runtime.
-You can change all configerations 
+You can change all configerations
 
 ## Part 1 — Web Crawler
+
 - Async BFS traversal of primelands.lk with proper browser lifecycle management
 - JavaScript rendering support for dynamic property listings
 - Rate limiting to avoid overloading the server
@@ -135,6 +122,7 @@ You can change all configerations
 - Outputs: individual `.md` files per property + `data/primelands_corpus.jsonl`
 
 **Quick Verify:**
+
 ```bash
 wc -l data/primelands_corpus.jsonl
 ```
@@ -143,12 +131,12 @@ wc -l data/primelands_corpus.jsonl
 
 Five chunking strategies implemented and benchmarked:
 
-| Strategy | Description |
-|---|---|
-| **Semantic** | Splits on semantic similarity boundaries |
-| **Fixed** | Token-based fixed-size windows |
-| **Sliding** | Fixed size with configurable overlap |
-| **Parent-Child** | Hierarchical chunks with parent linking |
+| Strategy          | Description                                |
+| ----------------- | ------------------------------------------ |
+| **Semantic**      | Splits on semantic similarity boundaries   |
+| **Fixed**         | Token-based fixed-size windows             |
+| **Sliding**       | Fixed size with configurable overlap       |
+| **Parent-Child**  | Hierarchical chunks with parent linking    |
 | **Late Chunking** | Embedding-aware chunking at retrieval time |
 
 All 5 strategies are indexed into separate Qdrant collections with full embedding metadata.
@@ -158,17 +146,20 @@ All 5 strategies are indexed into separate Qdrant collections with full embeddin
 **Tool:** LangChain LCEL + Qdrant | **Points: 25**
 
 ### RAGService
+
 - Modern LCEL `Runnable` chain
 - Retriever integration with top-k semantic search
 - Inline citations with source URLs in every response
 
 ### CAGService
+
 - Two-tier cache: **FAQ cache** (pre-warmed) + **history cache** (session)
 - Semantic similarity matching using cosine similarity (threshold > 0.90)
 - Cache hit/miss tracking and statistics
 - Sub-500ms response for cached FAQ queries
 
 ### CRAGService
+
 - LLM-based confidence scoring on retrieved documents
 - Triggers corrective retrieval when confidence < 0.6
 - Demonstrates measurable answer quality improvement over baseline RAG
@@ -177,19 +168,15 @@ All 5 strategies are indexed into separate Qdrant collections with full embeddin
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Web Crawling | Playwright (async) |
-| Embeddings | OpenAI `text-embedding-3-large` |
-| Vector DB | Qdrant (cloud) |
-| LLM | OpenAI GPT-4o-mini |
-| RAG Framework | LangChain LCEL |
-| Token Counting | tiktoken |
-| Package Manager | uv |
-| Config Management | `.env` + `config.py` |
+| Layer             | Technology                      |
+| ----------------- | ------------------------------- |
+| Web Crawling      | Playwright (async)              |
+| Embeddings        | OpenAI `text-embedding-3-large` |
+| Vector DB         | Qdrant (cloud)                  |
+| LLM               | OpenAI GPT-4o-mini              |
+| RAG Framework     | LangChain LCEL                  |
+| Token Counting    | tiktoken                        |
+| Package Manager   | uv                              |
+| Config Management | `.env` + `config.py`            |
+
 ---
-
-
-
-
-
