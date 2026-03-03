@@ -64,7 +64,7 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             for section in sections:
                 text = section.page_content.strip()
 
-                if not text or len(text) < SEMENTIC_MIN_CHUNK_SIZE:
+                if not text or len(text) < SEMANTIC_MIN_CHUNK_SIZE:
                     continue
 
                 if count_tokens(text) > SEMANTIC_MAX_CHUNK_SIZE:
@@ -77,19 +77,20 @@ def sementic_chunk(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
                     sub_chunks = sub_splitter.split_text(text)
 
-                    if sub_text.strip():
-                        chunks.append({
-                            "url": url,
-                            "title" : title,
-                            "text" : sub_text.strip(),
-                            "project_id" : project_id,
-                            "strategy" : "semantic",
-                            "chunk_index" : chunk_idx,
-                            "heading" : section.metadata.get("h1", "") or section.metadata.get("h2", "")
+                    for sub_text in sub_chunks:
+                        if sub_text.strip():
+                            chunks.append({
+                                "url": url,
+                                "title" : title,
+                                "text" : sub_text.strip(),
+                                "project_id" : project_id,
+                                "strategy" : "semantic",
+                                "chunk_index" : chunk_idx,
+                                "heading" : section.metadata.get("h1", "") or section.metadata.get("h2", "")
 
-                        })
+                            })
 
-                        chunk_idx += 1
+                            chunk_idx += 1
 
                 else:
                     chunks.append({
@@ -276,7 +277,7 @@ def late_chunk_index(document: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     chunks = []
     chunk_idx = 0
 
-    base_size_chars = LATE_CHUNK_SIZE * 4
+    base_size_chars = LATE_CHUNK_BASE_SIZE * 4
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size = base_size_chars,
@@ -361,9 +362,9 @@ class ChunkingService:
 
     def __init__(self):
         self.strategies = {
-            "semantic": semantic_chunk,
+            "semantic": sementic_chunk,
             "fixed": fixed_chunk,
-            "sliding": sliding_chunk,
+            "sliding": sliding_chunks,
             "parent_child": parent_child_chunk,
             "late_chunk": late_chunk_index
         }
@@ -383,9 +384,9 @@ class ChunkingService:
 
 
 __all__ = [
-    "semantic_chunk",
+    "sementic_chunk",
     "fixed_chunk",
-    "sliding_chunk",
+    "sliding_chunks",
     "parent_child_chunk",
     "late_chunk_index",
     "late_chunk_split",

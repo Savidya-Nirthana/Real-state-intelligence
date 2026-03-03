@@ -13,7 +13,6 @@ import re
 from urllib.parse import urljoin ,urlparse
 from markdownify import markdownify as md   
 import json 
-# from src.real_state.config import CRAWL_OUT_DIR
 
 
 class PrimeLandWebCrawler:
@@ -23,7 +22,6 @@ class PrimeLandWebCrawler:
         self.exclude_patterns = exclude_patterns
         self.visited : Set[str] = set()
         self.documents : List[Dict[str, Any]] = []
-        print("Starting crawl")
 
     def should_crawl(self, url: str) -> bool:
         """ check if url should be crawled base on rulz """
@@ -71,38 +69,29 @@ class PrimeLandWebCrawler:
         if url not in start_urls:
             
 
-        # Create a new blank container to hold ONLY the advertisement pieces
             ad_container = soup.new_tag('div')
 
-            # 1. collect project id 
             project_id = soup.find("input", id="iProjectID")["value"]
             ad_container.append(f"Project ID: {project_id}")
             
-            # 2. Grab Title & Location
             title_elem = soup.find('h1', class_='project_name')
             if title_elem:
                 ad_container.append(title_elem)
-                # Location is usually in the <p> tag right after the title
                 loc_parent = title_elem.parent
                 if loc_parent:
                     loc_elem = loc_parent.find('p')
                     if loc_elem:
                         ad_container.append(loc_elem)
 
-            # 3. Grab Price & Unit
             price_elem = soup.find('h1', class_='text_red')
             if price_elem:
                 ad_container.append(price_elem)
-                # The "PER PERCH UPWARDS" text
                 unit_elem = price_elem.find_next_sibling('p', class_='fst-italic')
                 if unit_elem:
                     ad_container.append(unit_elem)
 
-            # 4. Grab the main details column (About, Payment Plan, Facilities)
-            # In the provided HTML, this is inside a specific Bootstrap column class
             details_col = soup.find('div', class_=re.compile(r'col-xxl-8.*col-lg-8'))
             if details_col:
-                # We want to remove the interactive Map/Location tabs at the bottom of the ad
                 tabs_ul = details_col.find('ul', class_='arrow_tab')
                 if tabs_ul:
                     tabs_ul.decompose()
@@ -112,20 +101,16 @@ class PrimeLandWebCrawler:
                         
                 ad_container.append(details_col)
 
-            # Convert our custom container to Markdown
             if ad_container.contents:
                 content_md = md(str(ad_container), heading_style="ATX")
             else:
                 content_md = ""
 
-            # Clean up the markdown
             content_md = re.sub(r'\n{3,}', '\n\n', content_md)
             content_md = content_md.strip()
 
-            # Extract headings for metadata
             headings = [h.get_text(strip=True) for h in ad_container.find_all(['h1', 'h2', 'h3', 'h4'])]
             
-            # Fallback title if ad title isn't found
             page_title = title_elem.get_text(strip=True) if title_elem else (soup.title.string if soup.title else "Untitled")
 
         # Extract internal links
@@ -239,14 +224,34 @@ class PrimeLandWebCrawler:
 
     def crawl(self, start_urls: List[str], request_delay: float = 2.0) -> List[Dict[str, Any]]:
         print("Starting crawl")
-        return asyncio.run(self.crawl_async(start_urls, request_delay))
+        import sys
+        import concurrent.futures
+
+        def _run_in_thread():
+            """Run the async crawl in a fresh ProactorEventLoop on a new thread."""
+            if sys.platform == "win32":
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(
+                    self.crawl_async(start_urls, request_delay)
+                )
+            finally:
+                loop.close()
+
+        # Run in a separate thread so Jupyter's own event loop isn't blocked
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(_run_in_thread)
+            return future.result()
 
 
 __all__ = ["PrimeLandWebCrawler"]
 
 
 
-
+# direct run without jupyter notebook
 if __name__ == "__main__":
     base_url = "https://www.primelands.lk"
     start_urls = [

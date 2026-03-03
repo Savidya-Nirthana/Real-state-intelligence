@@ -1,182 +1,166 @@
-# 🏠 Real Estate Intelligence Platform — Prime Lands
+# 🏠 Real State Intelligence — PrimeLands RAG System
 
-A production-ready **Retrieval-Augmented Generation (RAG)** system built on top of real Sri Lankan property listings from [primelands.lk](https://www.primelands.lk). This platform combines async web crawling, multi-strategy chunking, intelligent caching, and corrective retrieval to deliver accurate, citation-backed answers to real estate queries.
+An end-to-end **Retrieval-Augmented Generation (RAG)** system for Sri Lanka's PrimeLands real estate platform. Crawls property listings, chunks and embeds documents using 5 strategies, and serves accurate, grounded answers through RAG, CAG (Cache-Augmented), and CRAG (Corrective RAG) pipelines.
 
----
+## 🏗️ Architecture
 
-## 🎯 Project Overview
-
-This project builds a full end-to-end real estate Q&A system using modern RAG techniques. Starting from raw web crawling, it processes property data through five different chunking strategies, indexes them into a Qdrant vector database, and serves queries through three intelligent retrieval layers: standard RAG, Cache-Augmented Generation (CAG), and Corrective RAG (CRAG).
-
-**Key Goals:**
-
-- Crawl and structure property listings from primelands.lk
-- Benchmark 5 chunking strategies for retrieval quality
-- Implement CAG for sub-500ms FAQ responses
-- Implement CRAG with confidence-based corrective retrieval
-- Evaluate performance with rigorous quantitative metrics
-
----
+```
+User Query
+    │
+    ▼
+┌──────────┐    HIT     ┌────────────┐
+│ CAG Cache │──────────►│ Cached     │
+│ (FAQ +    │           │ Response   │
+│  History) │           └────────────┘
+└────┬─────┘
+     │ MISS
+     ▼
+┌──────────┐   Low Conf  ┌──────────┐
+│   RAG    │────────────►│  CRAG    │
+│ (k=4)   │             │ (k=8)   │
+└────┬─────┘             └────┬─────┘
+     │                        │
+     ▼                        ▼
+┌──────────────────────────────────┐
+│   Qdrant Vector Store (2015     │
+│   vectors, COSINE similarity)   │
+└──────────────────────────────────┘
+     │
+     ▼
+┌──────────────────────────────────┐
+│   LLM Generation (Gemini Flash) │
+│   + Grounded Answer with URLs   │
+└──────────────────────────────────┘
+```
 
 ## 📁 Project Structure
 
 ```
 real_state/
-│
-├── src/
-│   └── real_state/
-│       │
-│       ├── application/
-│       │   └── chat_service/
-│       │       ├── cag_cache.py        # Two-tier cache logic (FAQ + history)
-│       │       ├── cag_service.py      # Cache-Augmented Generation service
-│       │       └── rag_service.py      # Base RAG with LCEL chain & citations
-│       │
-│       ├── domain/
-│       │   ├── prompts/                # Prompt templates
-│       │   ├── __init__.py
-│       │   ├── models.py               # Domain models & entities
-│       │   └── utils.py                # Shared utility functions
-│       │
-│       ├── ingest_document_service/
-│       │   ├── __init__.py
-│       │   ├── chunkers.py             # All 5 chunking strategies
-│       │   └── web_crawler.py          # Async Playwright crawler
-│       │
-│       └── infrastructure/
-│           ├── db/
-│           │   ├── __init__.py
-│           │   └── vector_db.py        # Qdrant vector store integration
-│           │
-│           └── llm_provider/
-│               ├── __init__.py
-│               ├── embeddings.py       # Embedding model setup
-│               └── llm_service.py      # LLM provider abstraction
-│
-├── main.py                             # Application entry point
-├── config.py                           # Centralised configuration
-├── .env                                # Environment variables (not committed)
-├── .env-example                        # Environment variable template
-├── .gitignore
-├── .python-version
-├── pyproject.toml                      # Project dependencies & metadata
-├── uv.lock                             # Locked dependency versions
-└── README.md
+├── notebooks/
+│   ├── 01_crawl_primelands.ipynb    # Web crawling pipeline
+│   ├── 02_chunk_and_embed.ipynb     # 5 chunking strategies + Qdrant indexing
+│   ├── 03_chat_with_demo.ipynb      # RAG / CAG / CRAG interactive demo
+│   └── 04_performance_arena.ipynb   # Full evaluation & benchmarking
+├── src/real_state/
+│   ├── application/
+│   │   ├── chat_service/
+│   │   │   ├── rag_service.py       # Standard RAG
+│   │   │   ├── cag_service.py       # Cache-Augmented Generation
+│   │   │   ├── cag_cache.py         # FAQ + history cache with embeddings
+│   │   │   └── crag_service.py      # Corrective RAG with confidence scoring
+│   │   ├── domain/
+│   │   │   ├── utils.py             # format_docs, calculate_confidence
+│   │   │   └── prompts/             # RAG prompt templates
+│   │   └── ingest_document_service/
+│   │       └── web_crawler.py       # Playwright-based async crawler
+│   ├── infrastructure/
+│   │   ├── db/vector_db.py          # QdrantStorage wrapper
+│   │   └── llm_provider/            # OpenRouter / OpenAI LLM + embeddings
+│   └── config.py                    # Central configuration
+├── config/
+│   ├── config.yaml                  # System parameters
+│   ├── faqs.yaml                    # Pre-cached FAQ entries
+│   └── models.yaml                  # Model configuration
+├── data/                            # Crawled corpus, results, JSON outputs
+├── main.py                          # Application entry point
+└── pyproject.toml                   # Dependencies (uv)
 ```
 
-## ⚙️ Setup & Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.10+
-- Node.js (for Playwright)
-- Openrouter(Recommended) or openai API key
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/) package manager
+- API key: OpenRouter (recommended) or OpenAI
 
-### Install Dependencies
-
-This project uses [`uv`](https://github.com/astral-sh/uv) for fast dependency management.
+### Setup
 
 ```bash
-git clone <repo-url>
-cd real-state-rag
+# Clone and enter project
+git clone https://github.com/Savidya-Nirthana/Real-state-intelligence.git
+cd real_state
 
-# Install uv if you don't have it
-pip install uv
-
-# Install all dependencies from lockfile
+# Install dependencies
 uv sync
 
-# Install Playwright browser
-uv run playwright install chromium
-```
-
-### Cofingure
-
-Copy the environment template and fill in your values:
-
-```bash
+# Configure environment
 cp .env-example .env
+# Edit .env and add your API key:
+#   OPENROUTER_API_KEY=sk-or-...
 ```
 
-Edit `.env`:
-
-```env
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-# or
-OPENAI_API_KEY=sk-proj-your-key-here
-
-QDRANT_API_KEY=qdrant-api-key
-QDRANT_URL=qdrant-url
-QDRANT_COLLECTION_NAME='prime_lands'
-```
-
-All configuration are saved in `config.yaml` and `config.yaml` is loaded at the runtime.
-You can change all configerations
-
-## Part 1 — Web Crawler
-
-- Async BFS traversal of primelands.lk with proper browser lifecycle management
-- JavaScript rendering support for dynamic property listings
-- Rate limiting to avoid overloading the server
-- Extracts all metadata fields: `property_id`, `title`, `address`, `price`, `bedrooms`, `bathrooms`, `sqft`, `amenities`, `agent`
-- Outputs: individual `.md` files per property + `data/primelands_corpus.jsonl`
-
-**Quick Verify:**
+### Run Notebooks
 
 ```bash
-wc -l data/primelands_corpus.jsonl
+# Start Jupyter
+jupyter notebook notebooks/
+
+# Execute in order:
+# 1. 01_crawl_primelands.ipynb  → Crawl 207 property pages
+# 2. 02_chunk_and_embed.ipynb   → Chunk & embed into Qdrant
+# 3. 03_chat_with_demo.ipynb    → Interactive RAG/CAG/CRAG demo
+# 4. 04_performance_arena.ipynb → Full performance evaluation
 ```
 
-## Part 2 — Chunking Lab
+## 📊 Key Results
 
-Five chunking strategies implemented and benchmarked:
+### Chunking Strategy Comparison (10 queries × 5 strategies)
 
-| Strategy          | Description                                |
-| ----------------- | ------------------------------------------ |
-| **Semantic**      | Splits on semantic similarity boundaries   |
-| **Fixed**         | Token-based fixed-size windows             |
-| **Sliding**       | Fixed size with configurable overlap       |
-| **Parent-Child**  | Hierarchical chunks with parent linking    |
-| **Late Chunking** | Embedding-aware chunking at retrieval time |
+| Strategy     | Precision@5 | Recall@5  | Relevance | Latency | Composite |
+| ------------ | ----------- | --------- | --------- | ------- | --------- |
+| **🥇 Child** | **0.400**   | **0.623** | 0.515     | 5.42s   | **0.513** |
+| 🥈 Fixed     | 0.200       | 0.553     | 0.510     | 4.56s   | 0.430     |
+| 🥉 Sliding   | 0.260       | 0.503     | 0.501     | 4.86s   | 0.429     |
+| Semantic     | 0.140       | 0.478     | 0.540     | 4.51s   | 0.401     |
+| Late Chunk   | 0.160       | 0.503     | 0.450     | 4.43s   | 0.379     |
 
-All 5 strategies are indexed into separate Qdrant collections with full embedding metadata.
+### CAG Cache Effectiveness (100-query simulation)
 
-## 🧠 Part 3 — Intelligence Layers
+| Metric            | Value                      |
+| ----------------- | -------------------------- |
+| Cache Hit Rate    | **80.0%**                  |
+| Latency Speedup   | **13.2×** (0.49s vs 6.42s) |
+| Cost Reduction    | **76.2%** ($24/mo savings) |
+| API Calls Avoided | 12,000/month               |
 
-**Tool:** LangChain LCEL + Qdrant | **Points: 25**
+### CRAG Correction Impact (20 queries — RAG vs CRAG)
 
-### RAGService
+- Self-correcting retrieval for low-confidence queries
+- Expanded retrieval (k=4 → k=8) improves confidence scores
+- Results saved to `data/crag_comparison_results.csv`
 
-- Modern LCEL `Runnable` chain
-- Retriever integration with top-k semantic search
-- Inline citations with source URLs in every response
+## 🔧 Tech Stack
 
-### CAGService
+| Component           | Technology                                           |
+| ------------------- | ---------------------------------------------------- |
+| **Crawling**        | Playwright + BeautifulSoup                           |
+| **Chunking**        | 5 strategies (Semantic, Fixed, Sliding, Child, Late) |
+| **Embeddings**      | OpenAI `text-embedding-3-large`                      |
+| **Vector Store**    | Qdrant (local, COSINE similarity)                    |
+| **LLM**             | Google Gemini 2.5 Flash (via OpenRouter)             |
+| **Framework**       | LangChain LCEL                                       |
+| **Package Manager** | uv                                                   |
 
-- Two-tier cache: **FAQ cache** (pre-warmed) + **history cache** (session)
-- Semantic similarity matching using cosine similarity (threshold > 0.90)
-- Cache hit/miss tracking and statistics
-- Sub-500ms response for cached FAQ queries
+## 📦 Data Pipeline
 
-### CRAGService
+1. **Crawl** — Playwright async crawler visits 207 PrimeLands property pages, extracts structured content (title, price, location, facilities, payment plans)
+2. **Chunk** — Documents split using 5 strategies with configurable sizes (500-1500 tokens)
+3. **Embed** — OpenAI `text-embedding-3-large` generates 3072-dim vectors
+4. **Index** — Vectors stored in Qdrant with metadata (URL, strategy, project ID)
+5. **Query** — User queries flow through CAG → RAG/CRAG → grounded answer with source URLs
 
-- LLM-based confidence scoring on retrieved documents
-- Triggers corrective retrieval when confidence < 0.6
-- Demonstrates measurable answer quality improvement over baseline RAG
+## 📄 Generated Reports
 
----
+| Report                                 | Description                              |
+| -------------------------------------- | ---------------------------------------- |
+| `data/chunking_comparison_results.csv` | Raw 50-run evaluation metrics            |
+| `data/chunking_comparison_summary.csv` | Strategy-level aggregated scores         |
+| `data/cag_stats.json`                  | CAG simulation results (structured JSON) |
+| `data/crag_comparison_results.csv`     | RAG vs CRAG per-query comparison         |
+| `data/crag_impact_summary.json`        | CRAG correction impact metrics           |
 
-## 🛠️ Tech Stack
+## 📝 License
 
-| Layer             | Technology                      |
-| ----------------- | ------------------------------- |
-| Web Crawling      | Playwright (async)              |
-| Embeddings        | OpenAI `text-embedding-3-large` |
-| Vector DB         | Qdrant (cloud)                  |
-| LLM               | OpenAI GPT-4o-mini              |
-| RAG Framework     | LangChain LCEL                  |
-| Token Counting    | tiktoken                        |
-| Package Manager   | uv                              |
-| Config Management | `.env` + `config.py`            |
-
----
+This project is part of the AI Bootcamp Mini Project 02.
