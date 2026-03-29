@@ -141,7 +141,36 @@ jupyter notebook notebooks/
 | **Vector Store**    | Qdrant (local, COSINE similarity)                    |
 | **LLM**             | Google Gemini 2.5 Flash (via OpenRouter)             |
 | **Framework**       | LangChain LCEL                                       |
+| **Frontend**        | Next.js (React, TypeScript)                          |
 | **Package Manager** | uv                                                   |
+
+## 🖥️ Frontend UI
+
+A sleek, dark-themed **Next.js** dashboard that lets you interact with the RAG system in real time. Switch between **CAG**, **RAG**, and **CRAG** processing modes, pick a chunking strategy, and get grounded answers with source links — all from one interface.
+
+### Home — Query Dashboard
+
+![Home — Query Dashboard with mode selector, chunking strategy dropdown, and suggested queries](srceenshots/image.png)
+
+> The landing screen features quick-access **suggested queries**, a mode toggle bar (CAG · RAG · CRAG), and a chunking strategy selector. Type a question or click a suggestion to get started.
+
+### Processing a Query (CRAG Mode)
+
+![CRAG mode — query submitted with a processing spinner](srceenshots/image%20copy.png)
+
+> After submitting a query, a **loading indicator** shows the system is retrieving and scoring documents through the Corrective RAG pipeline.
+
+### Grounded Response with Key Facts
+
+![CRAG response — key facts, detailed answer with source URLs, and contact info](srceenshots/image%20copy%202.png)
+
+> The response is structured into **Key Facts** (bullet-pointed with direct source links), a detailed **Answer** paragraph, and **Contact** information — all grounded in the retrieved documents.
+
+### Response Metadata & Sources
+
+![Response metadata — confidence score, correction badge, latency, doc count, and clickable source links](srceenshots/image%20copy%203.png)
+
+> At the bottom of each response, metadata badges show the **pipeline used** (CRAG), **cache status** (Cache Miss → RAG), whether a **correction was applied**, response **latency**, and the number of **documents retrieved**. Confidence scores display the before → after improvement. Clickable **source links** let users verify answers directly on PrimeLands.
 
 ## 📦 Data Pipeline
 
