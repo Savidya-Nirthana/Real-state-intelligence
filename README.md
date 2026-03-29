@@ -189,7 +189,3 @@ A sleek, dark-themed **Next.js** dashboard that lets you interact with the RAG s
 | `data/cag_stats.json`                  | CAG simulation results (structured JSON) |
 | `data/crag_comparison_results.csv`     | RAG vs CRAG per-query comparison         |
 | `data/crag_impact_summary.json`        | CRAG correction impact metrics           |
-
-## 📝 License
-
-This project is part of the AI Bootcamp Mini Project 02.
